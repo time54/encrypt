@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0,user-scalable=no" />
+        <title>前端加密传输</title>
+        <style>
+            *{margin:0;padding: 0;}
+            html,body,.wrap{
+                width:100%;height:100%;
+                font-size: 14px;
+            }
+            .wrap{
+                padding: 30px;
+                box-sizing: border-box;
+            }
+            .common{margin-bottom:20px;}
+            .dec{
+                display: inline-block;
+                width: 20%;}
+        </style>
+    </head>
+    <body>
+        <div class="wrap">
+            <div class="common">
+                <span class="dec">明文：</span>
+                <input type="text" class="clear_data" placeholder="请输入需要加密的原文"/>
+            </div>
+            <div class="common">
+                    <span class="dec">aes key：</span>
+                    <input class="aesKey" type="text" placeholder="随机产生16位密钥"/>
+                    <button class="random">random</button>
+            </div>
+            <div class="common">
+                    <span>RSA对aes key公钥加密：</span>  <button class="rsa_encrypt">rsa加密</button>
+                    <textarea rows="5" cols="50" class="encrypt_aesKey" placeholder="加密后的aes密钥"></textarea>
+            </div>
+            <div class="common">
+                    <span>AES加密数据：</span>   <button class="aes_encrypt">aes加密</button>
+                    <textarea rows="5" cols="50" class="encrypt_data" placeholder="AES加密数据"></textarea>
+            </div>
+            <div class="common">
+                    <span>提交数据：</span>   
+                    <textarea rows="5" cols="50" class="encrypt_data" placeholder="AES加密数据"></textarea>
+                    <button class="submit">提交数据</button>
+            </div>
+        </div>
+        <script type="text/javascript" src="jquery.js"></script>                                                              
+        <script src="rsa.js"></script>
+        <script src="aes.js"></script>
+        <script>
+            /*1、随机产生16位aes密钥*/
+            var aesKey = '';//随机产生的16位aes密钥
+            $('.random').click(function(){
+                var chars = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+                for(var i=0; i<16; i++){
+                   var index = Math.round(Math.random()*35);
+                   aesKey += chars[index];
+                }
+                $('.aesKey').val(aesKey);
+            });
+            /*2、RSA对aes公钥加密*/
+            var rsa_publickey = 'MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDlOJu6TyygqxfWT7eLtGDwajtNFOb9I5XRb6khyfD1Yt3YiCgQWMNW649887VGJiGr/L5i2osbl8C9+WJTeucF+S76xFxdU6jE0NQ+Z+zEdhUTooNRaY5nZiu5PgDB0ED/ZKBUSLKL7eibMxZtMlUDHjm4gwQco1KRMDSmXSMkDwIDAQAB';
+            var encrypted_aesKey = "";//RSA加密后的aesKey
+            $('.rsa_encrypt').click(function(){
+                var aesKeyVal =  $('.aesKey').val();
+                var encrypt = new JSEncrypt(); //定义rsa加密对象
+                encrypt.setPublicKey(rsa_publickey);
+                var encrypted_aesKey = encrypt.encrypt(aesKeyVal);
+                $('.encrypt_aesKey').val(encrypted_aesKey);
+            });
+            /*3、AES加密数据*/
+            var encrypted = ''; //AES加密后的数据
+            $('.aes_encrypt').click(function(){
+                var clear_data =  $('.clear_data').val();
+                var key = CryptoJS.enc.Utf8.parse(aesKey); // 秘钥
+                var iv = CryptoJS.enc.Utf8.parse(aesKey); //向量iv
+                 encrypted = CryptoJS.AES.encrypt(clear_data, key, {
+                    iv: iv,
+                    mode: CryptoJS.mode.CBC,
+                    padding: CryptoJS.pad.Pkcs7
+                });
+                $('.encrypt_data').val(encrypted);
+            });
+
+            /*4、服务端对加密后的AES密钥进行RSA私钥解密，拿到aes密钥原文*/
+            $('.submit').click(function(){
+                $.ajax({
+                    url: 'decode.php',
+                    type: 'post',
+                    data: {'aeskey':encrypted_aesKey,
+                            'encrypted':encrypted
+                            },
+                    dataType: 'html',
+                    success: function(data){
+                        console.log(data);
+                    }
+                });
+            });
+        </script>
+    </body>
+</html>
