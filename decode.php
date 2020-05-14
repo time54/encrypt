@@ -1,5 +1,4 @@
 <?php
-  /**rsa解密 *//
   function rsa_decode(aeskey){
       //读取私钥文件
       $private_key = file_get_contents('rsa_private_key.pem');
